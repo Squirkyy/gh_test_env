@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: 2024 Gerald Wiese <wiese@gnuhealth.org>
+# SPDX-FileCopyrightText: 2024 Leibniz University Hannover
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+stages:
+  - test
+  - release
+
+test:
+  stage: test
+  image: docker:25.0.3
+  services:
+    - docker:25.0.3-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_DRIVER: overlay2
+    GIT_SUBMODULE_STRATEGY: recursive
+  before_script:
+      - docker version
+      - docker compose version
+      - apk add --no-cache python3 py3-pip
+      - python3 --version
+      - pip3 install --break-system-packages proteus
+      - |
+        cat <<EOF > ./connect.py
+        from proteus import config
+        print('Connecting to the fresh database')
+        conf = config.set_xmlrpc("http://admin:gnusolidario@docker:8080/health/")
+        print('Success')
+        print('Connecting to the local demo database')
+        conf = config.set_xmlrpc("http://admin:gnusolidario@docker:8080/ghdemo44/")
+        print('Success')
+        EOF
+      - pwd
+      - ls
+      - ls gnuhealth/
+  script:
+      - docker compose up -d --build
+      - docker ps
+      - sleep 120
+      - python3 connect.py
+
+reuse:
+  stage: test
+  image:
+    name: fsfe/reuse:latest
+    entrypoint: [""]
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+  script:
+    - reuse --include-submodules lint
+
+release:
+  stage: release
+  image: docker:25.0.3
+  services:
+    - docker:25.0.3-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    GIT_SUBMODULE_STRATEGY: recursive
+  script:
+    - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_USER_TOKEN
+    - RELEASE_VERSION=$(cat gnuhealth/VERSION)
+    - docker build -t ${CI_REGISTRY_IMAGE}:${RELEASE_VERSION} ./gnuhealth/
+    - docker push ${CI_REGISTRY_IMAGE}:${RELEASE_VERSION}
+  only:
+    - main
+

@@ -1,0 +1,3 @@
+[submodule "gnuhealth"]
+	path = gnuhealth
+	url = ../gnu-health-dockerfile.git

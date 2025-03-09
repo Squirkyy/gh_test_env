@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2024 Gerald Wiese <wiese@gnuhealth.org>
+# SPDX-FileCopyrightText: 2024 Leibniz University Hannover
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+app-data/
+db-data/
+app-log/
+db-log/
+web-log/

@@ -1,0 +1,9 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+
+Files: .gitmodules
+Copyright: 2024 Gerald Wiese <wiese@gnuhealth.org>
+License: GPL-3.0-or-later
+
+Files: gnuhealth/VERSION
+Copyright: 2024 Gerald Wiese <wiese@gnuhealth.org>
+License: GPL-3.0-or-later
