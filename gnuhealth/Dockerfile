@@ -50,6 +50,7 @@ RUN chmod +x /opt/gnuhealth/tryton/gnuhealth-setup \
     /scripts/init_and_run.sh
 
 RUN chown -R gnuhealth:gnuhealth /opt/gnuhealth /home/gnuhealth
+RUN chmod +x /scripts/init
 USER gnuhealth
 ENV HOME=/home/gnuhealth
 
