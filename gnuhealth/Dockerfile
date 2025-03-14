@@ -1,39 +1,58 @@
-# SPDX-FileCopyrightText: 2024 Gerald Wiese <wiese@gnuhealth.org>
-# SPDX-License-Identifier: 2024 Leibniz University Hannover
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
 FROM python:3.11.8-bookworm
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     postgresql-client wget expect graphviz \
-    libreoffice-writer-nogui libreoffice-calc-nogui && \
+    libreoffice-writer-nogui libreoffice-calc-nogui \
+    vim && \
     pip3 install uwsgi
+
+# Create a dedicated non-root user "gnuhealth"
+RUN adduser --disabled-password --gecos "" gnuhealth
 
 # Download the demo database dump
 RUN cd /tmp/ && wget https://www.gnuhealth.org/downloads/postgres_dumps/gnuhealth-44-demo.sql.gz && \
     gunzip gnuhealth-44-demo.sql.gz
 
-# Copy local Tryton directory (which includes gnuhealth-setup and start_gnuhealth.sh)
+# Copy local Tryton directory (includes gnuhealth-setup and start_gnuhealth.sh)
 COPY src/tryton /opt/gnuhealth/tryton
 
-# Ensure required directories exist and copy configuration files
+# Ensure required directories exist and copy configuration file
 RUN mkdir -p /opt/gnuhealth/etc /opt/gnuhealth/var/log /opt/gnuhealth/var/lib && \
-    cp /opt/gnuhealth/tryton/etc/trytond.conf /opt/gnuhealth/etc/ && \
-    cp /opt/gnuhealth/tryton/etc/gnuhealth_log.conf /opt/gnuhealth/etc/
+    mkdir -p /opt/gnuhealth/tryton/modules && \
+    cp /opt/gnuhealth/tryton/config/trytond.conf /opt/gnuhealth/etc/ && \
+    cp /opt/gnuhealth/tryton/config/gnuhealth_log.conf /opt/gnuhealth/etc/ && \
+    chown -R gnuhealth:gnuhealth /opt/gnuhealth/etc
 
-# Copy configuration and supporting files
+RUN mkdir -p /opt/gnuhealth/tryton/gnuhealth /opt/gnuhealth/tryton/modules /opt/gnuhealth/bin /opt/gnuhealth/doc
+# Create minimal .gnuhealthrc with necessary env variables
+RUN echo 'export GNUHEALTH_INST_DIR=/opt/gnuhealth/tryton' > /home/gnuhealth/.gnuhealthrc && \
+    echo 'export MODULES_DIR=/opt/gnuhealth/tryton/modules' >> /home/gnuhealth/.gnuhealthrc && \
+    chown gnuhealth:gnuhealth /home/gnuhealth/.gnuhealthrc
+
+# Create expected Tryton server structure by symlinking the pip-installed trytond
+RUN mkdir -p /opt/gnuhealth/tryton/server/trytond-5.0.20/bin && \
+    ln -si /usr/local/bin/trytond /opt/gnuhealth/tryton/server/trytond-5.0.20/bin/trytond
+RUN pip3 install trytond
+RUN mkdir -p /opt/gnuhealth/tryton/server/trytond-5.0.20/bin && \
+    ln -si "$(which trytond)" /opt/gnuhealth/tryton/server/trytond-5.0.20/bin/trytond
+
+
+# Copy additional configuration and supporting files
 COPY ./trytond.ini /opt/gnuhealth/etc/trytond.ini
+COPY ./init_and_run.sh /scripts/init_and_run.sh
+COPY ./init /scripts/init
 COPY ./banner.txt /tmp/banner.txt
 
-# Ensure scripts are executable (including the ones inside /opt/gnuhealth/tryton)
+# Ensure scripts are executable
 RUN chmod +x /opt/gnuhealth/tryton/gnuhealth-setup \
     /opt/gnuhealth/tryton/start_gnuhealth.sh \
     /scripts/init_and_run.sh
 
-# Copy the init_and_run.sh script, which will now use gnuhealth-setup
-COPY ./init_and_run.sh /scripts/init_and_run.sh
+RUN chown -R gnuhealth:gnuhealth /opt/gnuhealth /home/gnuhealth
+USER gnuhealth
+ENV HOME=/home/gnuhealth
 
-# Entry point for container
 ENTRYPOINT ["/scripts/init_and_run.sh"]
+
+# CMD ["tail", "-f", "/dev/null"]

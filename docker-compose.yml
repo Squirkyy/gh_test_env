@@ -27,18 +27,20 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    ports:
+      - 8080:8000
     volumes:
       - ./app-data:/opt/gnuhealth/var/lib
       - ./app-log:/opt/gnuhealth/var/log
 
-  web:
-    image: nginx:1.25.4
-    depends_on:
-      - db
-      - app
-    ports:
-      - 8080:80
-      # - 8443:443
-    volumes:
-      - ./web-site:/etc/nginx/conf.d
-      - ./web-log:/var/log/nginx
+  # web:
+  #   image: nginx:1.25.4
+  #   depends_on:
+  #     - db
+  #     - app
+  #   # ports:
+  #     # - 8080:80
+  #     # - 8443:443
+  #   volumes:
+  #     - ./web-site:/etc/nginx/conf.d
+  #     - ./web-log:/var/log/nginx
