@@ -4,10 +4,11 @@ It contains a PostgreSQL container, an application container running GNU Health
 To set it up follow the following instructions:
 
 - [Install Docker](https://docs.docker.com/engine/install/)
+  
+- Clone the HIS into the gnuhealth/src folder
 
 - Run docker compose up -d --build
 
-- Clone the HIS into the gnuhealth/src folder
 
 - Connect to localhost:8080, use 'health' for empty database and 'ghdemo44' for demo database. Username is 'admin' and password 'gnusolidario'.
 
